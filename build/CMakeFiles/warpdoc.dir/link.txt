@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/warpdoc.dir/source/main.cpp.o  -o warpdoc -lopencv_core -lopencv_imgproc -lopencv_videoio -lopencv_highgui 

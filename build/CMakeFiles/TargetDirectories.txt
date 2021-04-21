@@ -1,3 +1,0 @@
-/home/xrich/development/projects/warpdoc/build/CMakeFiles/rebuild_cache.dir
-/home/xrich/development/projects/warpdoc/build/CMakeFiles/warpdoc.dir
-/home/xrich/development/projects/warpdoc/build/CMakeFiles/edit_cache.dir
