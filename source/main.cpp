@@ -6,7 +6,7 @@
 #include <aug/cast.hpp>  // only used for ignoring return value of functions
 
 #include "types.hpp"
-#include "computation.hpp"
+#include "processing.hpp"
 #include "visuals.hpp"
 #include "windows.hpp"
 
@@ -22,7 +22,7 @@ namespace testing::main
     auto process(cv::Mat& source, cv::Mat& warp) -> bool
     {
         const auto unordered_points =
-            computation::detect_document(testing::computation::preprocess(source));
+            processing::detect_document(testing::processing::preprocess(source));
 
         // case with width 0 is impossible thus indicates that none was found
         // in that case make warp black screen
@@ -32,8 +32,8 @@ namespace testing::main
             return false;
         }
 
-        const auto points = computation::reorder_points(unordered_points);
-        warp = computation::warp(source, points);
+        const auto points = processing::reorder_points(unordered_points);
+        warp = processing::warp(source, points);
 
         // visual feedback on what was detected
         visuals::annotate_document(source, unordered_points); 

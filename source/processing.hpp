@@ -4,8 +4,49 @@
 
 
 // algorithms for document detection and warping in order of optimal execution
-namespace testing::computation
+namespace testing::processing
 {
+    auto reorder_points(const Parallelogram& points) -> Parallelogram;
+
+    // math functions needed in processing
+    namespace utility_math
+    {
+        [[nodiscard]] constexpr auto square(const auto value) noexcept
+        {
+            return value * value;
+        }
+        [[nodiscard]] auto distance(const std::pair<cv::Point, cv::Point>& points) noexcept
+        {
+            return
+                std::sqrt
+                (
+                    square(points.first.x - points.second.x)
+                    + square(points.first.y
+                    - points.second.y)
+                );
+        }
+        [[nodiscard]] auto are_roughly_equal
+            (const std::pair<std::size_t, std::size_t>& values, const std::size_t play) noexcept
+        {
+            static constexpr auto maximum_value = std::numeric_limits<decltype(values.first)>::max();
+
+            return
+                (values.first < play ? 0 : values.first - play) <= values.second &&
+                (maximum_value - play < values.first ? maximum_value : values.first + play) >= values.second;
+        }
+        [[nodiscard]] auto is_parallelogram(const std::vector<cv::Point>& points) -> bool
+        {
+            static constexpr auto play = 0x28;
+
+            return
+                are_roughly_equal
+                    ({distance({points[0], points[1]}), distance({points[3], points[2]})}, play) &&
+                are_roughly_equal
+                    ({distance({points[1], points[3]}), distance({points[2], points[0]})}, play);
+        }
+    }
+
+
     // transform image to be ready for recognition function
     auto preprocess(const cv::Mat& image) -> cv::Mat
     {
@@ -35,35 +76,6 @@ namespace testing::computation
         return copy;
     }
 
-    auto reorder_points(const Parallelogram& points) -> Parallelogram;
-    [[nodiscard]] constexpr auto square(const auto value) noexcept
-    {
-        return value * value;
-    }
-    [[nodiscard]] auto distance(const std::pair<cv::Point, cv::Point>& points) noexcept
-    {
-        return
-            std::sqrt
-                (square(points.first.x - points.second.x) + square(points.first.y - points.second.y));
-    }
-    [[nodiscard]] auto are_roughly_equal
-        (const std::pair<std::size_t, std::size_t>& values, const std::size_t play) noexcept
-    {
-        static constexpr auto maximum_value = std::numeric_limits<decltype(values.first)>::max();
-        return
-            (values.first < play ? 0 : values.first - play) <= values.second &&
-            (maximum_value - play < values.first ? maximum_value : values.first + play) >= values.second;
-    }
-    [[nodiscard]] auto is_parallelogram(const std::vector<cv::Point>& points) -> bool
-    {
-        static constexpr auto play = 0x28;
-
-        return
-            are_roughly_equal
-                ({distance({points[0], points[1]}), distance({points[3], points[2]})}, play) &&
-            are_roughly_equal
-                ({distance({points[1], points[3]}), distance({points[2], points[0]})}, play);
-    }
     // find document in preprocessed image and return rectangle points in unspecified order
     [[nodiscard]] auto detect_document(const cv::Mat& image) -> Parallelogram
     {
@@ -106,7 +118,7 @@ namespace testing::computation
                 continue;
             }
 
-            if (area > biggest_rectangle.area && is_parallelogram(points))
+            if (area > biggest_rectangle.area && utility_math::is_parallelogram(points))
             {
                 biggest_rectangle.area = area;
                 biggest_rectangle.points = {points[0], points[1], points[2], points[3]};
