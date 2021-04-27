@@ -10,16 +10,12 @@ namespace testing::windows
     {
         // Title is "std::string" because "cv::imshow" takes string and not "std::string_view"
         using Title = std::string;
-        using Scalar = double;
         using Image = cv::Mat;
         using Status = bool;
 
 
         // identifier to address window
         Title title;
-
-        // scalar of displayed image
-        Scalar scalar {1};
 
         // displayed image
         Image image = {};
@@ -30,11 +26,7 @@ namespace testing::windows
 
     auto show(const Window& window) -> void
     {
-        cv::imshow
-        (
-            window.title.data(),
-            OUTPARAMETER(cv::resize(window.image, OUT, {}, window.scalar, window.scalar), cv::Mat)
-        );
+        cv::imshow(window.title.data(), window.image);
     }
     auto update(Window& window) -> void
     {

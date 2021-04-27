@@ -26,8 +26,7 @@ namespace testing::main
 
         // case with width 0 is impossible thus indicates that none was found
         // in that case make warp black screen
-        static const cv::Point origin {0, 0};
-        if (unordered_points[0] == origin && unordered_points[1] == origin)
+        if (unordered_points[0] == unordered_points[1] || unordered_points[0] == unordered_points[2])
         {
             return false;
         }
@@ -56,19 +55,21 @@ namespace testing::main
 }
 
 
-auto main() -> int
+auto main(const int argument_count, const char* arguments[]) -> int
 {
-    // scale original size to fit screen
-    static constexpr auto source_window_scalar = 1;
-    static constexpr auto warp_window_scalar = 1.5;
-
     // titles/handles of output windows
     static const testing::windows::Window::Title source_window_title {"input"};
     static const testing::windows::Window::Title warp_window_title {"warp"};
 
 
+    if (argument_count != 2)
+    {
+        std::cerr << "invalid arguments\n";
+        return EXIT_FAILURE;
+    }
+
     // open webcam #0
-    cv::VideoCapture capture {0};
+    cv::VideoCapture capture {arguments[1]};
 
     // setup windows
     cv::namedWindow(source_window_title);
@@ -76,8 +77,8 @@ auto main() -> int
 
     testing::main::TransformationWindows windows
     {
-        {source_window_title, source_window_scalar},
-        {warp_window_title, warp_window_scalar}
+        {source_window_title},
+        {warp_window_title}
     };
 
 
