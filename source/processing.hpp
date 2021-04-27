@@ -1,3 +1,5 @@
+#include <array>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 #include "aug/outparameter.hpp"
 #include "types.hpp"
@@ -6,6 +8,10 @@
 // algorithms for document detection and warping in order of optimal execution
 namespace testing::processing
 {
+    using Dimensions = std::pair<int, int>;
+    using FDimensions = std::pair<float, float>;
+
+
     auto reorder_points(const Parallelogram& points) -> Parallelogram;
 
     // math functions needed in processing
@@ -20,9 +26,8 @@ namespace testing::processing
             return
                 std::sqrt
                 (
-                    square(points.first.x - points.second.x)
-                    + square(points.first.y
-                    - points.second.y)
+                    square(points.first.x - points.second.x) +
+                    square(points.first.y - points.second.y)
                 );
         }
         [[nodiscard]] auto are_roughly_equal
@@ -43,6 +48,44 @@ namespace testing::processing
                     ({distance({points[0], points[1]}), distance({points[3], points[2]})}, play) &&
                 are_roughly_equal
                     ({distance({points[1], points[3]}), distance({points[2], points[0]})}, play);
+        }
+
+        template<typename To, typename From, std::size_t size>
+        [[nodiscard]] auto convert_array(const std::array<From, size>& array) noexcept
+            -> std::array<To, size>
+        {
+            std::array<To, size> to;
+            std::transform
+            (
+                array.cbegin(),
+                array.cend(),
+                to.begin(),
+                [](const auto element) { return static_cast<To>(element); }
+            );
+
+            return to;
+        }
+        [[nodiscard]] auto fit_to_frame(const Dimensions frame, const Dimensions image) noexcept
+            -> FDimensions
+        {
+            return
+                image.first > image.second ?
+                FDimensions
+                {
+                    frame.first,
+
+                    static_cast<float>(image.second) /
+                    static_cast<float>(std::max(image.first, 1)) *
+                    frame.first
+                } :
+                FDimensions
+                {
+                    static_cast<float>(image.first) /
+                    static_cast<float>(std::max(image.second, 1)) *
+                    frame.second,
+
+                    frame.second,
+                };
         }
     }
 
@@ -161,18 +204,21 @@ namespace testing::processing
     // annotate found document in image with connected circles on given points
     [[nodiscard]] auto warp(const cv::Mat& image, const Parallelogram& points) -> cv::Mat
     {
-        const float width_float = points[1].x - points[0].x;
-        const float height_float = points[2].y - points[0].y;
+        const auto detected_width = utility_math::distance({points[0], points[1]});
+        const auto detected_height = utility_math::distance({points[0], points[2]});
 
-        const auto width = static_cast<int>(width_float);
-        const auto height = static_cast<int>(height_float);
+        const auto dimensions =
+            utility_math::fit_to_frame({image.cols, image.rows}, {detected_width, detected_height});
 
-        const std::array<cv::Point2f, 4> source {{points[0], points[1], points[2], points[3]}};
+        const auto width = dimensions.first;
+        const auto height = dimensions.second;
+
+        const std::array<cv::Point2f, 4> source = utility_math::convert_array<cv::Point2f>(points);
 
         const std::array<cv::Point2f, 4> destination
         {
             {
-                {0, 0}, {width_float, 0}, {0, height_float}, {width_float, height_float}
+                {0, 0}, {width, 0}, {0, height}, {width, height}
             }
         };
 
@@ -180,7 +226,12 @@ namespace testing::processing
             OUTPARAMETER
             (
                 cv::warpPerspective
-                (image, OUT, cv::getPerspectiveTransform(source, destination), {width, height}),
+                (
+                    image,
+                    OUT,
+                    cv::getPerspectiveTransform(source, destination),
+                    {static_cast<int>(width), static_cast<int>(height)}
+                ),
                 cv::Mat
             );
     }
